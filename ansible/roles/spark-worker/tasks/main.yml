@@ -1,0 +1,42 @@
+---
+- name: Download Spark binary
+  get_url:
+    url: "https://archive.apache.org/dist/spark/spark-3.5.1/spark-3.5.1-bin-hadoop3.tgz"
+    dest: /tmp/spark.tgz
+    mode: "0644"
+
+- name: Extract Spark into /opt
+  unarchive:
+    src: /tmp/spark.tgz
+    dest: /opt
+    remote_src: yes
+
+- name: Symlink /opt/spark → /opt/spark-3.5.1-bin-hadoop3
+  file:
+    src: "/opt/spark-3.5.1-bin-hadoop3"
+    dest: "/opt/spark"
+    state: link
+
+- name: Create Spark conf directory
+  file:
+    path: /opt/spark/conf
+    state: directory
+    mode: "0755"
+
+- name: Create spark-env.sh for worker
+  copy:
+    dest: /opt/spark/conf/spark-env.sh
+    content: |
+      SPARK_WORKER_CORES=2
+      SPARK_WORKER_MEMORY=2g
+      SPARK_MASTER_HOST={{ hostvars['spark-master'].ansible_host }}
+      SPARK_MASTER_URL=spark://{{ hostvars['spark-master'].ansible_host }}:7077
+    mode: "0755"
+
+- name: Ensure worker script is executable
+  file:
+    path: /opt/spark/sbin/start-worker.sh
+    mode: "0755"
+
+- name: Start Spark worker
+  shell: "/opt/spark/sbin/start-worker.sh spark://{{ hostvars['spark-master'].ansible_host }}:7077"

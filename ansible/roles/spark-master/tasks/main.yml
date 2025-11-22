@@ -1,0 +1,62 @@
+- name: Download Spark tarball
+  get_url:
+    url: "https://archive.apache.org/dist/spark/spark-3.5.0/spark-3.5.0-bin-hadoop3.tgz"
+    dest: /tmp/spark.tgz
+  become: yes
+
+- name: Extract Spark into /opt
+  unarchive:
+    src: /tmp/spark.tgz
+    dest: /opt/
+    remote_src: yes
+  become: yes
+
+- name: Create symlink /opt/spark
+  file:
+    src: /opt/spark-3.5.0-bin-hadoop3
+    dest: /opt/spark
+    state: link
+  become: yes
+
+- name: Create spark-env.sh
+  copy:
+    dest: /opt/spark/conf/spark-env.sh
+    content: |
+      SPARK_MASTER_HOST={{ ansible_host }}
+      SPARK_MASTER_PORT=7077
+      SPARK_MASTER_WEBUI_PORT=8080
+      SPARK_WORKER_CORES=1
+      SPARK_WORKER_MEMORY=512m
+    owner: root
+    group: root
+    mode: '0644'
+  become: yes
+
+- name: Create systemd service for Spark Master
+  copy:
+    dest: /etc/systemd/system/spark-master.service
+    content: |
+      [Unit]
+      Description=Apache Spark Master
+      After=network.target
+
+      [Service]
+      Type=forking
+      User=ubuntu
+      ExecStart=/opt/spark/sbin/start-master.sh
+      ExecStop=/opt/spark/sbin/stop-master.sh
+      Restart=on-failure
+
+      [Install]
+      WantedBy=multi-user.target
+    owner: root
+    group: root
+    mode: '0644'
+  become: yes
+
+- name: Enable and start spark-master service
+  systemd:
+    name: spark-master.service
+    enabled: yes
+    state: started
+  become: yes
