@@ -30,9 +30,6 @@ resource "google_compute_project_metadata" "default" {
   }
 }
 
-# ❌ Suppression du Service Account (incompatible avec tes IAM)
-# ❌ Suppression du IAM binding
-
 resource "google_compute_instance" "spark_master" {
   name         = "spark-master"
   machine_type = "e2-medium"
@@ -46,7 +43,6 @@ resource "google_compute_instance" "spark_master" {
     }
   }
 
-  # 🔥 IMPORTANT : Ajout obligatoire
   metadata = {
     ssh-keys = "ubuntu:${file(var.ssh_public_key_path)}"
   }
@@ -79,7 +75,6 @@ resource "google_compute_instance" "spark_worker" {
     }
   }
 
-  # 🔥 Ajouter ceci pour corriger l’erreur SSH
   metadata = {
     ssh-keys = "ubuntu:${file(var.ssh_public_key_path)}"
   }
@@ -95,4 +90,5 @@ resource "google_compute_instance" "spark_worker" {
     scopes = ["https://www.googleapis.com/auth/cloud-platform"]
   }
 }
+
 
